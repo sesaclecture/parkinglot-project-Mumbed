@@ -14,3 +14,7 @@ parking_lot = [
 
 if parking_lot[0][1] == "🅿️":
     print("주차 가능")
+
+
+
+
