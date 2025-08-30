@@ -92,6 +92,14 @@ def is_parking_able(floor, parking_number):
 
 def view_current_parking_state():
     """ 주차 현황 조회"""
+    for f in range(ParkingSpec.FLOOR.value-1, -1, -1):
+        print("[" + str(f+1) + "F]")
+        for r in range(ParkingSpec.ROW.value):
+            line = ""
+            for c in range(ParkingSpec.COL.value):
+                line += parking_state[f][r][c].value
+            print(line)
+        print()
     pass
 
 # return parking fee
@@ -177,6 +185,10 @@ main()
 #             parking_state[f][r][c].value for c in range(ParkingSpec.COL.value))
 #         print(row_display)
 #     print("\n")
+
+
+
+
 
 
 FLOORS = 10   # 층
