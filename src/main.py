@@ -179,6 +179,12 @@ main()
 #     print("\n")
 
 
+FLOORS = 10   # 층
+COLS = 5      # 가로
+ROWS = 3      # 세로
+
+EMPTY = "🅿️"
+CAR = "🚗"
 
 def make_parking():
     parking = {}
