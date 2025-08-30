@@ -1,9 +1,10 @@
-
 """ 
 주차 관리 시스템
 """
 from enum import Enum
+import datetime
 import random
+import json
 
 
 class Action(Enum):
@@ -18,21 +19,79 @@ class ParkingImage(Enum):
 
 # 주차번호 0~99 or 1~100
 # parking number = row * 10 + column
+
+
 class ParkingSpec(Enum):
     FLOOR = 3
     ROW = 10
     # column
     COL = 10
 
+
+# 현재 차량 정보 DB
+# 차량번호: car_num0
+# user_db = {
+#     # example
+#     "car_num0": {
+#         # yyyy-mm-dd HH:MM
+#         "start_time": "2023-01-01 10:00",
+#         "end_time": "",
+#         "is_guest": False,
+#         "floor": 1,
+#         # 0 < position_num and position_num < row x col
+#         "position_num": 2,
+#     },
+#     # ...
+# }
+
+# # 출차시 추가
+# user_history_db = {
+#     # example
+#     "car_num0": [
+#         {
+#             "start_time": "2023-01-01 10:00",
+#             "end_time": "2023-01-01 12:00",
+#             "is_guest": False,
+#             "floor": 1,
+#             "position_num": 2,
+#             "payment": 3500,
+#         },
+#         {
+#             "start_time": "2023-01-02 14:00",
+#             "end_time": "2023-01-02 16:00",
+#             "is_guest": False,
+#             "floor": 2,
+#             "position_num": 1,
+#             "payment": 6000,
+#         },
+#         # , ...
+#     ],
+#     "car_num1": [
+#         {
+#             "start_time": "2023-01-03 09:00",
+#             "end_time": "2023-01-03 11:30",
+#             "is_guest": True,
+#             "floor": 1,
+#             "position_num": 5,
+#             "payment": 8000,
+#         }
+#     ],
+#     # ...
+# }
+
+
 # 3차원 배열 [floor][row][col]
 parking_state = []
+user_db = {}
+user_history_db = {}
+
 
 def init_parking_state():
     """
       주차 상태 초기화
       dummy data
     """
-    global parking_state
+    global parking_state, user_db, user_history_db
     parking_state = [
         [
             [
@@ -60,24 +119,41 @@ def init_parking_state():
     # 랜덤하게 disable_count만큼 선택
     disable_positions = random.sample(all_positions, disable_count)
 
-    for f, r, c in disable_positions:
-        parking_state[f][r][c] = ParkingImage.DISABLE
-    
-    # print(parking_state)
+    user_db.clear()
+    user_history_db.clear()
 
-# 차량 정보 DB (임시)
-# 차량번호: car_num0
-user_db = {
-    "car_num0": {
-        # yyyy-mm-dd HH:MM
-        "start_time": "2023-01-01 10:00",
-        "end_time": "",
-        "is_guest": False,
-        "floor": 1,
-        # 0 < position_num and position_num < row x col
-        "position_num": 2,
-    }
-}
+    # disable된 자리마다 차량 정보 생성 (현재 주차중, end_time="")
+    for idx, (f, r, c) in enumerate(disable_positions):
+        parking_state[f][r][c] = ParkingImage.DISABLE
+        car_number = f"car_num{idx}"
+        # use datetime
+
+        user_db[car_number] = {
+            "start_time": (datetime.datetime.now() - datetime.timedelta(hours=random.randint(1,10))).strftime("%Y-%m-%d %H:%M"),
+            "end_time": "",
+            "is_guest": False,
+            "floor": f + 1,
+            "position_num": r * ParkingSpec.COL.value + c + 1,
+        }
+        if idx % 2 == 0:
+            user_history_db[car_number] = []
+            days_ago = random.randint(1, 5)
+            user_history_db[car_number].append({
+                "start_time": (datetime.datetime.now() - datetime.timedelta(days=days_ago,hours=3)).strftime("%Y-%m-%d %H:%M"),
+                "end_time": (datetime.datetime.now() - datetime.timedelta(days=days_ago,hours=1)).strftime("%Y-%m-%d %H:%M"),
+                "is_guest": False,
+                "floor": f + 1,
+                "position_num": r * ParkingSpec.COL.value + c + 1,
+                "payment": 3500 if (r * ParkingSpec.COL.value + c + 1) % 2 == 0 else 6000,
+            })
+
+    # print(parking_state)
+    print(json.dumps(user_db, indent=2))
+    print("=" * 20)
+    print(json.dumps(user_history_db, indent=2))
+
+
+
 
 
 def get_parking_number(row, col):
@@ -95,6 +171,8 @@ def view_current_parking_state():
     pass
 
 # return parking fee
+
+
 def payment(car_number):
     """
 ## 시나리오 1
@@ -163,7 +241,6 @@ def main():
             print("시스템을 종료합니다.")
         else:
             print("알 수 없는 작업입니다.")
-
 
 main()
 
