@@ -229,13 +229,20 @@ def enter(car_number):
     if parking_state[floor-1][row-1][col-1] == ParkingImage.ABLE:
         parking_state[floor-1][row-1][col-1] = ParkingImage.DISABLE
         user_db[car_number] = {
-            "start_time": datetime.datetime.now,  
+            "start_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),  
             "end_time": "",
             "is_guest": True,
             "floor": floor,
             "position_num": (row-1) * ParkingSpec.COL.value + col #1~100까지 주차자리의 번호 
         }
+        # 해당 층 주차 현황 출력 (임시 구현 view_current_parking_state()으로 변경 예정)
+        print(f"\n=== {floor}층 주차 현황 ===")
+        for r in range(ParkingSpec.ROW.value):
+          row_display = "\t".join(parking_state[floor-1][r][c].value for c in range(ParkingSpec.COL.value))
+          print(row_display)
+
         print(f"{car_number} 차량이 {floor}층 ({row},{col}) 자리에 입차되었습니다.")
+        
     else:
         print("이미 사용 중인 자리입니다.")
 
