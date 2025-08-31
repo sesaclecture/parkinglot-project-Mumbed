@@ -181,41 +181,53 @@ def view_current_parking_state():
 # return parking fee
 
 
-def payment(car_number):
-    """
-## 시나리오 1
-1. 정기권 보유한 사용자 입차
-1. 차량번호, 입차 시각, 원하는 주차위치 (층/번호) 입력
-2. 1F 빈자리 4번째 자리로 안내 받은 뒤 선택
-3. 3시간 후 출차  주차비용 3500원 계산
-4. 출차
 
-## 시나리오 2
-1. 정기권 보유한 사용자 입차
-    1. 차량번호, 입차 시각, 원하는 주차위치 (층/번호) 입력
-2. 2F 빈자리 1번째 자리로 안내 받은 뒤 선택
-3. 2시간 후 출차  주차비용 6000원 계산
-4. 출차
-
-# 주차 요금
-- 회차 불가
-- 입차 후 60분까지 5000원
-- 이후 30분당 500원
-- 일일 최대 비용 20000원
-- 정기권 사용자 일 주차 비용 50%적용
-"""
-    pass
 
 
 def enter(car_number):
     """ 차량 입차 """
-    print(user_db[car_number])
+    #print(user_db[car_number])
     pass
+
+def payment(car_number):
+    entry = user_db[car_number]
+    start = datetime.datetime.strptime(entry['start_time'], "%Y-%m-%d %H:%M")
+    end = datetime.datetime.now()
+    duration = int((end - start).total_seconds() // 60)  # 분
+
+    # 20분 이내 출차 시 추가요금 없음
+    if duration <= 20:
+        fee = 0
+    else:
+        fee = 5000
+        if duration > 60:
+            extra = duration - 60
+            fee += ((extra + 29) // 30) * 500  # 30분 단위 반올림
+        if fee > 20000:
+            fee = 20000
+        if not entry['is_guest']:  # 정기권 차량
+            fee = fee // 2
+
+    return fee, end.strftime("%Y-%m-%d %H:%M")
 
 
 def leave(car_number):
-    """ 차량 출차 """
-    pass
+    if car_number not in user_db:
+        print("등록된 차량이 아닙니다. 다시 시도하세요.")
+        return
+    entry = user_db[car_number]
+    fee, end_time = payment(car_number)
+    print(f"차량번호: {car_number}, 주차요금: {fee}원")
+
+    floor_idx = entry['floor'] - 1
+    pos_idx = entry['position_num'] - 1
+    r, c = divmod(pos_idx, ParkingSpec.COL.value)
+    parking_state[floor_idx][r][c] = ParkingImage.ABLE  # 빈자리로 변경
+
+    del user_db[car_number]
+
+    view_current_parking_state()
+
 
 
 def action_filter(input):
