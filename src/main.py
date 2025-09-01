@@ -292,9 +292,6 @@ def payment(car_number):
             extra = duration - 60
             fee += ((extra + 29) // 30) * 500
             temp_fee = fee
-        if fee > 20000:
-            fee = 20000
-            temp_fee = fee
         if not entry['is_guest']:
             fee = fee // 2
 
@@ -375,7 +372,8 @@ def make_is_guest():
 
     card = input("카드를 넣고 Enter를 누르세요: ").strip()
     if card == "":
-        user_db[car_num]["is_guest"] = True
+        user_db[car_num]["is_guest"] = False
+        save_data_to_file(user_db, user_history_db)
         print(f"[성공] 정기권 적용 기간: {start_dt.strftime('%Y-%m-%d')} ~ {end_dt.strftime('%Y-%m-%d')}")
 
 
@@ -407,8 +405,11 @@ def main():
                 print("[안내] 현재 주차 중인 차량이 없습니다.")
                 continue
             print("현재 입차 중인 차량 목록:")
-            for car in user_db:
+            cars = list(user_db.keys())
+            for car in cars[:5]:
                 print(" -", car)
+            if len(cars) > 5:
+                print(" ...")
             car_number = input("출차할 차량 번호를 입력하세요: ").strip()
             if not car_number:
                 print("[오류] 차량 번호를 입력해주세요.")
