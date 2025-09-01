@@ -197,7 +197,7 @@ def Reserve(car_number):
         return
     while True:
         # 예약 입차일시 (1일전 예약가능)
-        enter_reserve_time = input("예약 입차일시(2025-08-27 10:58): ")
+        enter_reserve_time = input("예약 입차일시(ex: 2025-08-27 10:58) ")
         enter_reserve_datetime = datetime.datetime.strptime(enter_reserve_time, "%Y-%m-%d %H:%M")
         current_datetime = datetime.datetime.now()
         one_day_later = current_datetime + datetime.timedelta(days=1)
@@ -312,7 +312,7 @@ def main():
     print("안녕하세요 삼각편대 주차 타워 시스템 입니다.")
     while action != Action.EXIT:
 
-        print("원하는 작업을 선택하세요:(입차:1, 출차:2, 주차장 현황:3, 예약:4, 시스템 종료:5  :  )")
+        print("원하는 작업을 선택하세요:(입차:1, 출차:2, 주차장 현황:3, 정기권 구매:4, 주차장 예약:5, 시스템 종료:6)")
 
         user_input = input("입력: ").strip()
         action = action_filter(user_input)
