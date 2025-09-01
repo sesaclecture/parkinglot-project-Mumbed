@@ -26,6 +26,18 @@ class ParkingSpec(Enum):
     # column
     COL = 10
 
+class CarType(Enum):
+    COMPACT = "1.소형"
+    ELECTRIC = "2.전기"
+    DISABLED = "3.장애인"
+    NONE = "4.해당사항 없음"
+
+car_type_discount = {
+    CarType.NONE : 0,
+    CarType.COMPACT: 0.2,
+    CarType.ELECTRIC: 0.3,
+    CarType.DISABLED: 0.4
+}
 
 # 현재 차량 정보 DB
 # 차량번호: car_num0
@@ -133,12 +145,20 @@ def init_parking_state():
         car_number = generate_korean_car_number()
         # use datetime
 
+        car_type = CarType.NONE
+        if idx % 4 == 0:
+            car_type = CarType.COMPACT
+        elif idx % 4 == 1:
+            car_type = CarType.DISABLED
+        elif idx % 4 == 2:
+            car_type == CarType.ELECTRIC
         user_db[car_number] = {
             "start_time": (datetime.datetime.now() - datetime.timedelta(hours=random.randint(1,10))).strftime("%Y-%m-%d %H:%M"),
             "end_time": "",
             "is_guest": False,
             "floor": f + 1,
             "position_num": r * ParkingSpec.COL.value + c + 1,
+            "car_type": car_type
         }
         if idx % 2 == 0:
             user_history_db[car_number] = []
@@ -150,6 +170,7 @@ def init_parking_state():
                 "floor": f + 1,
                 "position_num": r * ParkingSpec.COL.value + c + 1,
                 "payment": 3500 if (r * ParkingSpec.COL.value + c + 1) % 2 == 0 else 6000,
+                "car_type": car_type
             })
 
 def get_parking_number(row, col):
@@ -219,6 +240,15 @@ def enter(car_number):
         row = int(input(f"원하는 행(1~{ParkingSpec.ROW.value}): "))
         col = int(input(f"원하는 열(1~{ParkingSpec.COL.value}): "))
 
+        car_type = None
+        while car_type == None:
+            car_type_input = input(f"차량 종류를 입력하세요 ({', '.join([ct.value for ct in CarType])}): ")
+            car_type = car_type_input_filter(car_type_input)
+            if car_type is None:
+                print("잘못된 차량 종류입니다. 다시 시도하세요.")
+            else:
+                break
+
         # 범위에서 벗어나는지 확인
         if row < 1 or row > ParkingSpec.ROW.value or col < 1 or col > ParkingSpec.COL.value:
             print("잘못된 좌석 입력입니다.")
@@ -232,7 +262,8 @@ def enter(car_number):
                 "end_time": "",
                 "is_guest": True,
                 "floor": floor,
-                "position_num": (row-1) * ParkingSpec.COL.value + col  # 1~100까지 주차자리의 번호
+                "position_num": (row-1) * ParkingSpec.COL.value + col,  # 1~100까지 주차자리의 번호
+                "car_type" : car_type if car_type != None else ""
             }
 
             view_floor_parking_state(floor, highlight=(row-1, col-1))
@@ -243,22 +274,35 @@ def enter(car_number):
 
 def payment(car_number):
     entry = user_db[car_number]
+    
+
+    car_type = car_type_value_to_enum(entry["car_type"])
+    
     start = datetime.datetime.strptime(entry['start_time'], "%Y-%m-%d %H:%M")
     end = datetime.datetime.now()
     duration = int((end - start).total_seconds() // 60)  # 분
 
+    temp_fee = 0
     # 20분 이내 출차 시 추가요금 없음
     if duration <= 20:
         fee = 0
     else:
         fee = 5000
+        temp_fee = fee
         if duration > 60:
             extra = duration - 60
             fee += ((extra + 29) // 30) * 500  # 30분 단위 반올림
+            temp_fee = fee
         if fee > 20000:
             fee = 20000
+            temp_fee = fee
         if not entry['is_guest']:  # 정기권 차량
             fee = fee // 2
+    
+    # cat_type discount
+    if car_type is not None and car_type != CarType.NONE:
+        fee -= temp_fee * car_type_discount[car_type]
+
 
     return fee, end.strftime("%Y-%m-%d %H:%M")
 
@@ -285,6 +329,21 @@ def leave(car_number):
 
 
 
+def car_type_value_to_enum(str):
+    if str == CarType.COMPACT.value:
+        return CarType.COMPACT
+    elif str == CarType.ELECTRIC.value:
+        return CarType.ELECTRIC
+    elif str == CarType.DISABLED.value:
+        return CarType.DISABLED
+    elif str == CarType.NONE.value:
+        return CarType.NONE
+    return None
+def car_type_input_filter(input):
+    for type in CarType:
+        if input in type.value.split(".") or input == type.value:
+            # print(f"선택된 작업: {type.name}")
+            return type 
 def action_filter(input):
     for act in Action:
         if input in act.value.split(".") or input == act.value:
