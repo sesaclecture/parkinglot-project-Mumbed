@@ -28,6 +28,70 @@ class ParkingSpec(Enum):
     ROW = 10
     COL = 10
 
+class CarType(Enum):
+    COMPACT = "1.소형"
+    ELECTRIC = "2.전기"
+    DISABLED = "3.장애인"
+    NONE = "4.해당사항 없음"
+
+car_type_discount = {
+    CarType.NONE : 0,
+    CarType.COMPACT: 0.2,
+    CarType.ELECTRIC: 0.3,
+    CarType.DISABLED: 0.4
+}
+
+# 현재 차량 정보 DB
+# 차량번호: car_num0
+# user_db = {
+#     # example
+#     "car_num0": {
+#         # yyyy-mm-dd HH:MM
+#         "start_time": "2023-01-01 10:00",
+#         "end_time": "",
+#         "is_guest": False,
+#         "floor": 1,
+#         # 0 < position_num and position_num < row x col
+#         "position_num": 2,
+#     },
+#     # ...
+# }
+
+# # 출차시 추가
+# user_history_db = {
+#     # example
+#     "car_num0": [
+#         {
+#             "start_time": "2023-01-01 10:00",
+#             "end_time": "2023-01-01 12:00",
+#             "is_guest": False,
+#             "floor": 1,
+#             "position_num": 2,
+#             "payment": 3500,
+#         },
+#         {
+#             "start_time": "2023-01-02 14:00",
+#             "end_time": "2023-01-02 16:00",
+#             "is_guest": False,
+#             "floor": 2,
+#             "position_num": 1,
+#             "payment": 6000,
+#         },
+#         # , ...
+#     ],
+#     "car_num1": [
+#         {
+#             "start_time": "2023-01-03 09:00",
+#             "end_time": "2023-01-03 11:30",
+#             "is_guest": True,
+#             "floor": 1,
+#             "position_num": 5,
+#             "payment": 8000,
+#         }
+#     ],
+#     # ...
+# }
+
 def generate_korean_car_number():
     head_num = random.randint(100, 999)
     kor_chars = ["가", "나", "다", "라", "마", "바",
@@ -97,8 +161,6 @@ def init_parking_state():
         parking_state[f][r][c] = ParkingImage.DISABLE
 
 
-
-
 def get_parking_number(row, col):
     """ 주차 번호 계산 """
     return (row - 1) * ParkingSpec.COL.value + col
@@ -166,6 +228,16 @@ def enter(car_number):
         row = int(input(f"원하는 행(1~{ParkingSpec.ROW.value}): "))
         col = int(input(f"원하는 열(1~{ParkingSpec.COL.value}): "))
 
+        car_type = None
+        while car_type == None:
+            car_type_input = input(f"차량 종류를 입력하세요 ({', '.join([ct.value for ct in CarType])}): ")
+            car_type = car_type_input_filter(car_type_input)
+            if car_type is None:
+                print("잘못된 차량 종류입니다. 다시 시도하세요.")
+            else:
+                break
+
+        # 범위에서 벗어나는지 확인
         if row < 1 or row > ParkingSpec.ROW.value or col < 1 or col > ParkingSpec.COL.value:
             print("잘못된 좌석 입력입니다.")
             continue
@@ -177,8 +249,8 @@ def enter(car_number):
                 "end_time": "",
                 "is_guest": True,
                 "floor": floor,
-                # 1~100까지 주차자리의 번호
-                "position_num": (row-1) * ParkingSpec.COL.value + col
+                "position_num": (row-1) * ParkingSpec.COL.value + col,  # 1~100까지 주차자리의 번호
+                "car_type" : car_type if car_type != None else ""
 
             }
             save_data_to_file(user_db, user_history_db)
@@ -220,21 +292,35 @@ def Reserve(car_number):
 
 def payment(car_number):
     entry = user_db[car_number]
+    
+
+    car_type = car_type_value_to_enum(entry["car_type"])
+    
     start = datetime.datetime.strptime(entry['start_time'], "%Y-%m-%d %H:%M")
     end = datetime.datetime.now()
     duration = int((end - start).total_seconds() // 60)  # 분
 
+    temp_fee = 0
+    # 20분 이내 출차 시 추가요금 없음
     if duration <= 20:
         fee = 0
     else:
         fee = 5000
+        temp_fee = fee
         if duration > 60:
             extra = duration - 60
-            fee += ((extra + 29) // 30) * 500
+            fee += ((extra + 29) // 30) * 500  # 30분 단위 반올림
+            temp_fee = fee
         if fee > 20000:
             fee = 20000
+            temp_fee = fee
         if not entry['is_guest']:
             fee = fee // 2
+    
+    # cat_type discount
+    if car_type is not None and car_type != CarType.NONE:
+        fee -= temp_fee * car_type_discount[car_type]
+
 
     return fee, end.strftime("%Y-%m-%d %H:%M")
 
@@ -274,6 +360,22 @@ def leave(car_number):
     view_current_parking_state()
 
 
+
+def car_type_value_to_enum(str):
+    if str == CarType.COMPACT.value:
+        return CarType.COMPACT
+    elif str == CarType.ELECTRIC.value:
+        return CarType.ELECTRIC
+    elif str == CarType.DISABLED.value:
+        return CarType.DISABLED
+    elif str == CarType.NONE.value:
+        return CarType.NONE
+    return None
+def car_type_input_filter(input):
+    for type in CarType:
+        if input in type.value.split(".") or input == type.value:
+            # print(f"선택된 작업: {type.name}")
+            return type 
 def action_filter(user_input):
     for act in Action:
         if user_input in act.value.split(".") or user_input == act.value:
