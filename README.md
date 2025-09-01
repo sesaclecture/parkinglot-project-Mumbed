@@ -1,4 +1,4 @@
-# parking_lost_system
+# parking_lot_system
 ## 초기설정
 
 |  | 요구사항명 | 내용 | 비고 |
