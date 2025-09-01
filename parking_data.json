@@ -5,48 +5,42 @@
             "end_time": "",
             "is_guest": true,
             "floor": 1,
-            "position_num": 1,
-            "car_type": "4.해당사항 없음"
+            "position_num": 1
         },
         "648카3875": {
             "start_time": "2025-08-31 12:08",
             "end_time": "",
             "is_guest": true,
             "floor": 2,
-            "position_num": 41,
-            "car_type": "4.해당사항 없음"
+            "position_num": 41
         },
         "296나8083": {
             "start_time": "2025-09-01 09:21",
             "end_time": "",
             "is_guest": false,
             "floor": 2,
-            "position_num": 66,
-            "car_type": "4.해당사항 없음"
+            "position_num": 66
         },
         "700다4842": {
             "start_time": "2025-08-30 15:41",
             "end_time": "",
             "is_guest": false,
             "floor": 1,
-            "position_num": 49,
-            "car_type": "4.해당사항 없음"
+            "position_num": 49
         },
         "489파2351": {
             "start_time": "2025-09-01 03:21",
             "end_time": "",
             "is_guest": false,
             "floor": 2,
-            "position_num": 80,
-            "car_type": "4.해당사항 없음"
+            "position_num": 80
         },
         "965아2496": {
             "start_time": "2025-08-31 08:24",
             "end_time": "",
             "is_guest": false,
             "floor": 1,
-            "position_num": 80,
-            "car_type": "4.해당사항 없음"
+            "position_num": 80
         },
         "111자2068": {
             "start_time": "2025-08-31 02:11",
@@ -81,8 +75,7 @@
             "end_time": "",
             "is_guest": false,
             "floor": 1,
-            "position_num": 5,
-            "car_type": "4.해당사항 없음"
+            "position_num": 5
         },
         "401아7198": {
             "start_time": "2025-09-01 01:54",
@@ -103,24 +96,21 @@
             "end_time": "",
             "is_guest": false,
             "floor": 2,
-            "position_num": 82,
-            "car_type": "4.해당사항 없음"
+            "position_num": 82
         },
         "793타8083": {
             "start_time": "2025-08-31 01:57",
             "end_time": "",
             "is_guest": true,
             "floor": 2,
-            "position_num": 56,
-            "car_type": "4.해당사항 없음"
+            "position_num": 56
         },
         "968파3427": {
             "start_time": "2025-08-29 14:59",
             "end_time": "",
             "is_guest": true,
             "floor": 3,
-            "position_num": 88,
-            "car_type": "4.해당사항 없음"
+            "position_num": 88
         },
         "512차7015": {
             "start_time": "2025-08-30 11:01",
