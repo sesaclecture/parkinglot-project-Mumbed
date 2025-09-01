@@ -24,8 +24,8 @@ class ParkingSpec(Enum):
     ROW = 10
     COL = 10
 
-
-DATA_FILE =  "parkinglot-project-Mumbed/parking_data.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # src/
+DATA_FILE = os.path.join(BASE_DIR, "..", "parking_data.json")
 
 # 3차원 배열 [floor][row][col]
 parking_state = []
