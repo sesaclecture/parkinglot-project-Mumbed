@@ -149,9 +149,9 @@ def init_parking_state():
             })
 
     # print(parking_state)
-    print(json.dumps(user_db, indent=2))
-    print("=" * 20)
-    print(json.dumps(user_history_db, indent=2))
+    # print(json.dumps(user_db, indent=2))
+    # print("=" * 20)
+    # print(json.dumps(user_history_db, indent=2))
 
 
 
@@ -172,11 +172,12 @@ def view_current_parking_state():
     """ 주차 현황 조회"""
     for f in range(ParkingSpec.FLOOR.value-1, -1, -1):
         print("[" + str(f+1) + "F]")
-        for r in range(ParkingSpec.ROW.value):
-            line = ""
-            for c in range(ParkingSpec.COL.value):
-                line += parking_state[f][r][c].value
-            print(line)
+        view_floor_parking_state(f+1)
+        # for r in range(ParkingSpec.ROW.value):
+        #     line = ""
+        #     for c in range(ParkingSpec.COL.value):
+        #         line += parking_state[f][r][c].value
+        #     print(line)
         print()
 
     pass
@@ -184,7 +185,15 @@ def view_current_parking_state():
 # return parking fee
 
 
-
+def view_floor_parking_state(floor):
+    print(f"\n=== {floor}층 주차 현황 ===")
+    for r in range(ParkingSpec.ROW.value + 1): # + 1 열 번호 자리
+        if r == 0:
+            row_display = "\t".join(str(c+1) for c in range(ParkingSpec.COL.value))
+            print("\t" + row_display)
+            continue
+        row_display = "\t".join(parking_state[floor-1][r-1][c].value for c in range(ParkingSpec.COL.value))
+        print(f"{r}\t" + row_display)
 
 
 def enter(car_number):
@@ -211,10 +220,15 @@ def enter(car_number):
         return
     
     # 해당 층 주차 현황 출력 (임시 구현 view_current_parking_state()으로 변경 예정)
-    print(f"\n=== {floor}층 주차 현황 ===")
-    for r in range(ParkingSpec.ROW.value):
-        row_display = "\t".join(parking_state[floor-1][r][c].value for c in range(ParkingSpec.COL.value))
-        print(row_display)
+    view_floor_parking_state(floor)
+    # print(f"\n=== {floor}층 주차 현황 ===")
+    # for r in range(ParkingSpec.ROW.value + 1): # + 1 열 번호 자리
+    #     if r == 0:
+    #         row_display = "\t".join(str(c+1) for c in range(ParkingSpec.COL.value))
+    #         print("   " + row_display)
+    #         continue
+    #     row_display = "\t".join(parking_state[floor-1][r][c].value for c in range(ParkingSpec.COL.value))
+    #     print(f"{r}행: " + row_display)
 
     # 원하는 자리 선택
     row = int(input(f"원하는 행(1~{ParkingSpec.ROW.value}): "))
@@ -236,10 +250,11 @@ def enter(car_number):
             "position_num": (row-1) * ParkingSpec.COL.value + col #1~100까지 주차자리의 번호 
         }
         # 해당 층 주차 현황 출력 (임시 구현 view_current_parking_state()으로 변경 예정)
-        print(f"\n=== {floor}층 주차 현황 ===")
-        for r in range(ParkingSpec.ROW.value):
-          row_display = "\t".join(parking_state[floor-1][r][c].value for c in range(ParkingSpec.COL.value))
-          print(row_display)
+        view_floor_parking_state(floor)
+        # print(f"\n=== {floor}층 주차 현황 ===")
+        # for r in range(ParkingSpec.ROW.value):
+        #   row_display = "\t".join(parking_state[floor-1][r][c].value for c in range(ParkingSpec.COL.value))
+        #   print(row_display)
 
         print(f"{car_number} 차량이 {floor}층 ({row},{col}) 자리에 입차되었습니다.")
         
@@ -334,10 +349,6 @@ main()
 #         print(row_display)
 #     print("\n")
 
-
-
-
-
 FLOORS = 10   # 층
 COLS = 5      # 가로
 ROWS = 3      # 세로
@@ -384,49 +395,7 @@ def viewer(parking, floor):
                 line += parking[f][(r,c)]
             print(line)
         print()
-
-
-
-
-
-
-
-
 # 실행 예시
-p = make_parking()
-a = input('층을 입력하세요(전체 층은 빈칸 or 0 입력) : ')
-viewer(p, a)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# p = make_parking()
+# a = input('층을 입력하세요(전체 층은 빈칸 or 0 입력) : ')
+# viewer(p, a)
