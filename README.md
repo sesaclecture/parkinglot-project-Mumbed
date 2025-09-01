@@ -1,5 +1,6 @@
 # parking_lot_system
-# 발표자료
+# 발표자료 
+https://docs.google.com/presentation/d/1DLxz0r_sayLAQhoGnuAY-c8qU3fkTIJeZKUPjl4Dh_g/edit?usp=sharing
 ## 초기설정
 
 |  | 요구사항명 | 내용 | 비고 |
