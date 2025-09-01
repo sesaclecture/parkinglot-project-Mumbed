@@ -11,7 +11,8 @@ class Action(Enum):
     ENTER = "1.입차"
     LEAVE = "2.출차"
     CHECK = "3.주차 현황 조회"
-    EXIT = "4.시스템 종료"
+    GUEST = "4.정기권 구매"
+    EXIT = "5.시스템 종료"
 
 
 class ParkingImage(Enum):
@@ -227,13 +228,45 @@ def action_filter(user_input):
             return act
 
 
+def make_is_guest():
+    print("안녕하세요 정기권 구매 페이지입니다. 입차 신청 후 이용해주시길 바랍니다.")
+    car_num = input('차량 번호를 입력해주세요.\n')
+    if car_num in user_db:
+        guest_time = input('구매하실 정기권 기간을 입력해주세요. (한달 : 1, 1년 : 2)')
+        entry = user_db[car_num]  
+
+        start_dt = datetime.datetime.strptime(entry['start_time'], "%Y-%m-%d %H:%M")
+
+        if guest_time == "1":
+            end_dt = start_dt + datetime.timedelta(days=30)  
+            print('한달 정기권 가격은 월/7만원 입니다.\n')
+            card = input('카드를 넣고 enter를 눌러주세요.')
+            if card == "":
+                user_db[car_num]["is_guest"] = True
+                print(f'감사합니다. 정기권 기간은 {start_dt.strftime("%Y-%m-%d")} ~ {end_dt.strftime("%Y-%m-%d")} 입니다.')
+            else:
+                print('결제가 완료되지 않았습니다.')
+        elif guest_time == "2":
+            end_dt = start_dt + datetime.timedelta(days=365) 
+            print('1년 정기권 가격은 60만원 (월/5만원) 입니다.')
+            card = input('카드를 넣고 enter를 눌러주세요.')
+            if card == "":
+                user_db[car_num]["is_guest"] = True
+                print(f'감사합니다. 정기권 기간은 {start_dt.strftime("%Y-%m-%d")} ~ {end_dt.strftime("%Y-%m-%d")} 입니다.')
+            else:
+                print('결제가 완료되지 않았습니다.')
+    else:
+        print('입차 신청 후 이용해주시길 바랍니다.')
+
+
 def main():
     init_parking_state()
 
     action = None
     print("안녕하세요 삼각편대 주차 타워 시스템 입니다.")
     while action != Action.EXIT:
-        print("원하는 작업을 선택하세요:(입차:1, 출차:2, 주차장 현황:3, 시스템 종료:4)")
+    
+        print("원하는 작업을 선택하세요:(입차:1, 출차:2, 주차장 현황:3, 정기권 구매:4, 시스템 종료:5)")
         user_input = input("입력: ").strip()
         action = action_filter(user_input)
 
@@ -252,11 +285,15 @@ def main():
             leave(car_number)
         elif action == Action.CHECK:
             view_current_parking_state()
+        elif action == Action.GUEST:
+            make_is_guest()
         elif action == Action.EXIT:
             print("시스템을 종료합니다.")
         else:
             print("알 수 없는 작업입니다.")
 
+main()
 
 if __name__ == "__main__":
     main()
+
