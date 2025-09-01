@@ -1,10 +1,11 @@
-""" 
+"""
 주차 관리 시스템
 """
 from enum import Enum
 import datetime
-import random
 import json
+import os
+
 
 
 class Action(Enum):
@@ -19,67 +20,12 @@ class ParkingImage(Enum):
     ABLE = "🅿️"
     DISABLE = "🚗"
 
-# 주차번호 0~99 or 1~100
-# parking number = row * 10 + column
 
 
 class ParkingSpec(Enum):
     FLOOR = 3
     ROW = 10
-    # column
     COL = 10
-
-
-# 현재 차량 정보 DB
-# 차량번호: car_num0
-# user_db = {
-#     # example
-#     "car_num0": {
-#         # yyyy-mm-dd HH:MM
-#         "start_time": "2023-01-01 10:00",
-#         "end_time": "",
-#         "is_guest": False,
-#         "floor": 1,
-#         # 0 < position_num and position_num < row x col
-#         "position_num": 2,
-#     },
-#     # ...
-# }
-
-# # 출차시 추가
-# user_history_db = {
-#     # example
-#     "car_num0": [
-#         {
-#             "start_time": "2023-01-01 10:00",
-#             "end_time": "2023-01-01 12:00",
-#             "is_guest": False,
-#             "floor": 1,
-#             "position_num": 2,
-#             "payment": 3500,
-#         },
-#         {
-#             "start_time": "2023-01-02 14:00",
-#             "end_time": "2023-01-02 16:00",
-#             "is_guest": False,
-#             "floor": 2,
-#             "position_num": 1,
-#             "payment": 6000,
-#         },
-#         # , ...
-#     ],
-#     "car_num1": [
-#         {
-#             "start_time": "2023-01-03 09:00",
-#             "end_time": "2023-01-03 11:30",
-#             "is_guest": True,
-#             "floor": 1,
-#             "position_num": 5,
-#             "payment": 8000,
-#         }
-#     ],
-#     # ...
-# }
 
 def generate_korean_car_number():
     head_num = random.randint(100, 999)
@@ -89,6 +35,10 @@ def generate_korean_car_number():
     tail_num = random.randint(1000, 9999)
     return f"{head_num}{kor}{tail_num}"
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # src/
+DATA_FILE = os.path.join(BASE_DIR, "..", "parking_data.json")
+
+
 
 # 3차원 배열 [floor][row][col]
 parking_state = []
@@ -97,87 +47,75 @@ user_history_db = {}
 user_reserve_db = {}
 
 
+def save_data_to_file(user_db, user_history_db, filename=DATA_FILE):
+    data = {
+        "user_db": user_db,
+        "user_history_db": user_history_db,
+    }
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+
+def load_data_from_file(filename=DATA_FILE):
+    if not os.path.exists(filename):
+        return {}, {}
+    with open(filename, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return data.get("user_db", {}), data.get("user_history_db", {})
+
+
 def init_parking_state():
-    """
-      주차 상태 초기화
-      dummy data
-    """
     global parking_state, user_db, user_history_db
+
+    # JSON 파일에서 데이터 불러오기
+    user_db_loaded, user_history_db_loaded = load_data_from_file()
+
+    if user_db_loaded:
+        user_db.update(user_db_loaded)
+        user_history_db.update(user_history_db_loaded)
+        print("저장된 데이터에서 차량 정보를 불러왔습니다.")
+    else:
+        # 난수 기반 초기 생성 코드 제거: 빈 상태로 초기화만 수행
+        user_db.clear()
+        user_history_db.clear()
+        print("저장된 데이터가 없습니다. 현재 차량 데이터는 비어있습니다.")
+
+    # user_db 기준으로 parking_state 초기화
     parking_state = [
         [
-            [
-                ParkingImage.ABLE for _ in range(ParkingSpec.COL.value)
-            ]
+            [ParkingImage.ABLE for _ in range(ParkingSpec.COL.value)]
             for _ in range(ParkingSpec.ROW.value)
         ]
         for _ in range(ParkingSpec.FLOOR.value)
     ]
 
-    # 전체 주차 공간 개수
-    total_spots = ParkingSpec.FLOOR.value * \
-        ParkingSpec.ROW.value * ParkingSpec.COL.value
-
-    # 30% 미만의 자리만 DISABLE로 설정 << 변경 가능
-    disable_count = int(total_spots * 1)
-
-    all_positions = [
-        (f, r, c)
-        for f in range(ParkingSpec.FLOOR.value)
-        for r in range(ParkingSpec.ROW.value)
-        for c in range(ParkingSpec.COL.value)
-    ]
-    # print(all_positions)
-
-    # 랜덤하게 disable_count만큼 선택
-    disable_positions = random.sample(all_positions, disable_count)
-
-    user_db.clear()
-    user_history_db.clear()
-    user_reserve_db.clear()
-
-    # disable된 자리마다 차량 정보 생성 (현재 주차중, end_time="")
-    for idx, (f, r, c) in enumerate(disable_positions):
+    for car_info in user_db.values():
+        f = car_info["floor"] - 1
+        pos = car_info["position_num"] - 1
+        r, c = divmod(pos, ParkingSpec.COL.value)
         parking_state[f][r][c] = ParkingImage.DISABLE
-        car_number = generate_korean_car_number()
-        # use datetime
 
-        user_db[car_number] = {
-            "start_time": (datetime.datetime.now() - datetime.timedelta(hours=random.randint(1, 10))).strftime("%Y-%m-%d %H:%M"),
-            "end_time": "",
-            "is_guest": False,
-            "floor": f + 1,
-            "position_num": r * ParkingSpec.COL.value + c + 1,
-        }
-        if idx % 2 == 0:
-            user_history_db[car_number] = []
-            days_ago = random.randint(1, 5)
-            user_history_db[car_number].append({
-                "start_time": (datetime.datetime.now() - datetime.timedelta(days=days_ago, hours=3)).strftime("%Y-%m-%d %H:%M"),
-                "end_time": (datetime.datetime.now() - datetime.timedelta(days=days_ago, hours=1)).strftime("%Y-%m-%d %H:%M"),
-                "is_guest": False,
-                "floor": f + 1,
-                "position_num": r * ParkingSpec.COL.value + c + 1,
-                "payment": 3500 if (r * ParkingSpec.COL.value + c + 1) % 2 == 0 else 6000,
-            })
+
 
 
 def get_parking_number(row, col):
     """ 주차 번호 계산 """
-    pass
+    return (row - 1) * ParkingSpec.COL.value + col
 
 
 def is_parking_able(floor, parking_number):
-    """ 주차 가능 여부 확인 """
-    pass
+    floor_idx = floor - 1
+    pos_idx = parking_number - 1
+    r, c = divmod(pos_idx, ParkingSpec.COL.value)
+    return parking_state[floor_idx][r][c] == ParkingImage.ABLE
 
 
 def view_current_parking_state():
     """ 주차 현황 조회"""
-    for f in range(ParkingSpec.FLOOR.value-1, -1, -1):
-        print("[" + str(f+1) + "F]")
-        view_floor_parking_state(f+1)
+    for f in range(ParkingSpec.FLOOR.value - 1, -1, -1):
+        print("[" + str(f + 1) + "F]")
+        view_floor_parking_state(f + 1)
         print()
-    pass
 
 
 def view_floor_parking_state(floor, highlight=None):
@@ -186,28 +124,27 @@ def view_floor_parking_state(floor, highlight=None):
         if r == 0:
             row_display = "\t".join(str(c+1)
                                     for c in range(ParkingSpec.COL.value))
+
             print("\t" + row_display)
             continue
         row_elems = []
         for c in range(ParkingSpec.COL.value):
-            if highlight and (r-1, c) == highlight:
+            if highlight and (r - 1, c) == highlight:
                 row_elems.append("🚙")  # 강조 자리만 🚙로 출력
             else:
-                row_elems.append(parking_state[floor-1][r-1][c].value)
+                row_elems.append(parking_state[floor - 1][r - 1][c].value)
         print(f"{r}\t" + "\t".join(row_elems))
 
 
 def enter(car_number):
     """ 차량 입차 """
-    # 이미 입차된 차량인지 확인
     if car_number in user_db:
         print("이미 입차된 차량입니다.")
         return
 
     while True:
-        # 층별 빈자리 안내
         for f in range(ParkingSpec.FLOOR.value):
-            empty = 0  # 빈자리 변수
+            empty = 0
             for r in range(ParkingSpec.ROW.value):
                 for c in range(ParkingSpec.COL.value):
                     if parking_state[f][r][c] == ParkingImage.ABLE:
@@ -217,27 +154,23 @@ def enter(car_number):
             print("현재 주차장에 빈자리가 없습니다. 예약을 진행해주세요")
             return
 
-        # 주차할 층 선택
+
         floor = int(input(f"원하는 층을 입력하세요 (1~{ParkingSpec.FLOOR.value}): "))
         if floor < 1 or floor > ParkingSpec.FLOOR.value:
             print("잘못된 층 입력입니다.")
             continue
 
-        # 해당 층 주차 현황 출력
         view_floor_parking_state(floor)
 
-        # 원하는 자리 선택
         row = int(input(f"원하는 행(1~{ParkingSpec.ROW.value}): "))
         col = int(input(f"원하는 열(1~{ParkingSpec.COL.value}): "))
 
-        # 범위에서 벗어나는지 확인
         if row < 1 or row > ParkingSpec.ROW.value or col < 1 or col > ParkingSpec.COL.value:
             print("잘못된 좌석 입력입니다.")
             continue
 
-        # 빈자리 확인 후 배정
-        if parking_state[floor-1][row-1][col-1] == ParkingImage.ABLE:
-            parking_state[floor-1][row-1][col-1] = ParkingImage.DISABLE
+        if parking_state[floor - 1][row - 1][col - 1] == ParkingImage.ABLE:
+            parking_state[floor - 1][row - 1][col - 1] = ParkingImage.DISABLE
             user_db[car_number] = {
                 "start_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "end_time": "",
@@ -245,13 +178,16 @@ def enter(car_number):
                 "floor": floor,
                 # 1~100까지 주차자리의 번호
                 "position_num": (row-1) * ParkingSpec.COL.value + col
-            }
 
-            view_floor_parking_state(floor, highlight=(row-1, col-1))
+            }
+            save_data_to_file(user_db, user_history_db)
+
+            view_floor_parking_state(floor, highlight=(row - 1, col - 1))
             print(f"{car_number} 차량이 {floor}층 ({row},{col}) 자리에 입차되었습니다.")
-            break  # 입차 완료 시 반복문 종료
+            break
         else:
             print("이미 사용 중인 자리입니다. 다시 선택해주세요.")
+
 
 
 def Reserve(car_number):
@@ -281,24 +217,22 @@ def Reserve(car_number):
         else:
             print("예약 불가: 최소 1일 전에 예약해야 합니다")
 
-
 def payment(car_number):
     entry = user_db[car_number]
     start = datetime.datetime.strptime(entry['start_time'], "%Y-%m-%d %H:%M")
     end = datetime.datetime.now()
     duration = int((end - start).total_seconds() // 60)  # 분
 
-    # 20분 이내 출차 시 추가요금 없음
     if duration <= 20:
         fee = 0
     else:
         fee = 5000
         if duration > 60:
             extra = duration - 60
-            fee += ((extra + 29) // 30) * 500  # 30분 단위 반올림
+            fee += ((extra + 29) // 30) * 500
         if fee > 20000:
             fee = 20000
-        if not entry['is_guest']:  # 정기권 차량
+        if not entry['is_guest']:
             fee = fee // 2
 
     return fee, end.strftime("%Y-%m-%d %H:%M")
@@ -318,17 +252,30 @@ def leave(car_number):
 
     view_floor_parking_state(entry['floor'], highlight=(r, c))
 
-    parking_state[floor_idx][r][c] = ParkingImage.ABLE  # 빈자리로 변경
+    parking_state[floor_idx][r][c] = ParkingImage.ABLE
+
+    # 출차 시 기록 user_history_db에 추가 (옵션)
+    if car_number not in user_history_db:
+        user_history_db[car_number] = []
+    user_history_db[car_number].append({
+        "start_time": entry["start_time"],
+        "end_time": end_time,
+        "is_guest": entry["is_guest"],
+        "floor": entry["floor"],
+        "position_num": entry["position_num"],
+        "payment": fee,
+    })
 
     del user_db[car_number]
+
+    save_data_to_file(user_db, user_history_db)
 
     view_current_parking_state()
 
 
-def action_filter(input):
+def action_filter(user_input):
     for act in Action:
-        if input in act.value.split(".") or input == act.value:
-            # print(f"선택된 작업: {act.name}")
+        if user_input in act.value.split(".") or user_input == act.value:
             return act
 
 
@@ -340,6 +287,7 @@ def main():
     while action != Action.EXIT:
 
         print("원하는 작업을 선택하세요:(입차:1, 출차:2, 주차장 현황:3, 예약:4, 시스템 종료:5  :  )")
+
         user_input = input("입력: ").strip()
         action = action_filter(user_input)
 
@@ -367,5 +315,6 @@ def main():
         else:
             print("알 수 없는 작업입니다.")
 
+if __name__ == "__main__":
+    main()
 
-main()
